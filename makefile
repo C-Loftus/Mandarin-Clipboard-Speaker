@@ -13,15 +13,16 @@ build:
 
 # install the systemd service
 install: build
-	systemd-analyze verify mandarin-clipboard-speaker.service
-	mkdir -p $(INSTALL_DIR)
 
 	# stop the systemd service if it is already installed and running
 	# that way the service can be reinstalled
 	systemctl --user stop $(SERVICE_FILE) || true
-	
+
+	mkdir -p $(INSTALL_DIR)
 	cp $(BINARY_NAME) $(INSTALL_DIR)/$(BINARY_NAME)
 	mkdir -p $(USER_SYSTEMD_DIR)
+	systemd-analyze verify mandarin-clipboard-speaker.service
+
 	cp $(SERVICE_FILE) $(USER_SYSTEMD_DIR)/$(SERVICE_FILE)
 	systemctl --user daemon-reexec
 	systemctl --user enable $(SERVICE_FILE)

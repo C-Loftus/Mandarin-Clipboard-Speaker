@@ -12,4 +12,4 @@ For automatic start on boot via systemd, run `make install` with the included ma
 
 ## Techncial Details
 
-This program runs and installs the [piper](https://rhasspy.github.io/piper-samples/) text-to-speech model for Chinese.  It currently installs the model and binary to the same location as [QuickPiperAudiobook](https://github.com/C-Loftus/QuickPiperAudiobook) but in the future once Piper is speech dispatcher, I can use that instead.
+This program runs and installs the [piper](https://rhasspy.github.io/piper-samples/) text-to-speech model for Chinese.  It currently installs the model and binary to the same location as [QuickPiperAudiobook](https://github.com/C-Loftus/QuickPiperAudiobook) but in the future once Piper is included within [speech dispatcher](https://github.com/brailcom/speechd), I can use that instead.

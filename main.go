@@ -106,44 +106,12 @@ func main() {
 			panic(err)
 		}
 
-		// Start Piper process once
 		err = os.Chdir(piperPath)
 		if err != nil {
 			log.Fatalf("Failed to change directory: %v", err)
 		}
-		piperCmd := exec.Command("./piper/piper", "--model", "zh_CN-huayan-medium.onnx", "--output-raw")
-		piperIn, err := piperCmd.StdinPipe()
-		if err != nil {
-			log.Fatalf("Failed to get Piper stdin: %v", err)
-		}
-		piperOut, err := piperCmd.StdoutPipe()
-		if err != nil {
-			log.Fatalf("Failed to get Piper stdout: %v", err)
-		}
 
-		// Pipe Piper output into aplay
-		aplayCmd := exec.Command("aplay", "-r", "22050", "-f", "S16_LE", "-t", "raw", "-")
-		aplayIn, err := aplayCmd.StdinPipe()
-		if err != nil {
-			log.Fatalf("Failed to get aplay stdin: %v", err)
-		}
-
-		err = piperCmd.Start()
-		if err != nil {
-			log.Fatalf("Failed to start Piper: %v", err)
-		}
-		err = aplayCmd.Start()
-		if err != nil {
-			log.Fatalf("Failed to start aplay: %v", err)
-		}
-
-		// Copy Piper's output to aplay's input
-		go func() {
-			_, err := bufio.NewReader(piperOut).WriteTo(aplayIn)
-			if err != nil {
-				log.Printf("Error piping Piper output to aplay: %v", err)
-			}
-		}()
+		var cancelCurrent context.CancelFunc
 
 		changed := clipboard.Watch(context.Background(), clipboard.FmtText)
 		for range changed {
@@ -160,13 +128,66 @@ func main() {
 				continue
 			}
 
-			// Write Han-only text into Piper's stdin
-			_, err := fmt.Fprintln(piperIn, textWithJustHan)
-			if err != nil {
-				log.Printf("Error writing to Piper stdin: %v", err)
-			} else {
-				log.Printf("Sent to Piper: %s", textWithJustHan)
+			// Cancel the previous speaking process
+			if cancelCurrent != nil {
+				cancelCurrent()
 			}
+
+			// Create a new context for the current speaking process
+			ctx, cancel := context.WithCancel(context.Background())
+			cancelCurrent = cancel
+
+			// Launch speaking process
+			go func(ctx context.Context, hanText string) {
+				log.Printf("Speaking: %s", hanText)
+
+				piperCmd := exec.CommandContext(ctx, "./piper/piper", "--model", "zh_CN-huayan-medium.onnx", "--output-raw")
+				piperIn, err := piperCmd.StdinPipe()
+				if err != nil {
+					log.Printf("Failed to get Piper stdin: %v", err)
+					return
+				}
+				piperOut, err := piperCmd.StdoutPipe()
+				if err != nil {
+					log.Printf("Failed to get Piper stdout: %v", err)
+					return
+				}
+
+				aplayCmd := exec.CommandContext(ctx, "aplay", "-r", "22050", "-f", "S16_LE", "-t", "raw", "-")
+				aplayIn, err := aplayCmd.StdinPipe()
+				if err != nil {
+					log.Printf("Failed to get aplay stdin: %v", err)
+					return
+				}
+
+				if err := piperCmd.Start(); err != nil {
+					log.Printf("Failed to start Piper: %v", err)
+					return
+				}
+				if err := aplayCmd.Start(); err != nil {
+					log.Printf("Failed to start aplay: %v", err)
+					return
+				}
+
+				// Send text to Piper
+				_, err = fmt.Fprintln(piperIn, hanText)
+				if err != nil {
+					log.Printf("Error writing to Piper stdin: %v", err)
+				}
+				piperIn.Close()
+
+				// Pipe Piper output to aplay
+				_, err = bufio.NewReader(piperOut).WriteTo(aplayIn)
+				if err != nil {
+					log.Printf("Error piping Piper output to aplay: %v", err)
+				}
+				aplayIn.Close()
+
+				// Wait for processes to finish
+				piperCmd.Wait()
+				aplayCmd.Wait()
+
+			}(ctx, textWithJustHan)
 		}
 	}()
 

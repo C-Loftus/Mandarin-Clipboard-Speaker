@@ -1,0 +1,11 @@
+[Unit]
+Description=Speak mandarin automatically when it is copied to the system clipboard
+After=network.target
+
+[Service]
+# %h refers to the user's home directory
+ExecStart=%h/.local/bin/mandarin-clipboard-speaker
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

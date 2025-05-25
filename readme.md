@@ -1,14 +1,13 @@
 # Mandarin Clipboard Speaker
 
-Hanzi (汉字 / Chinese characters) are difficult to memorize for non-native speakers; this program automatically speaks them as Mandarin when they are copied to the system clipboard on Linux.
+- Automatically speak Chinese characters as Mandarin when they are copied to the system clipboard on Linux.
+- Runs offline and works in any application with the goal to make 汉字 easier to read for non-native speakers.
 
 ## Running
 
-Clone the repo then run `go run main.go`
-
-## Installing as a systemd service
-
-For automatic start on boot via systemd, run `make install` with the included makefile
+- Clone the repo then run `go run main.go`
+- If the local model is not present, it will be installed automatically
+- For automatic start on boot via systemd, run `make install` with the included makefile
 
 ## Technical Details
 

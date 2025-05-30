@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"os/user"
 	"path/filepath"
+	"time"
 	"unicode"
 
 	"golang.design/x/clipboard"
@@ -101,9 +102,13 @@ func main() {
 	piperPath := filepath.Join(homedir, "piper")
 
 	go func() {
-		err := clipboard.Init()
-		if err != nil {
-			panic(err)
+		for {
+			err := clipboard.Init()
+			if err == nil {
+				break
+			}
+			log.Printf("failed to initialize clipboard: %v, retrying...", err)
+			time.Sleep(time.Second)
 		}
 
 		err = os.Chdir(piperPath)

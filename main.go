@@ -10,7 +10,6 @@ import (
 	"os/signal"
 	"os/user"
 	"path/filepath"
-	"time"
 	"unicode"
 
 	"golang.design/x/clipboard"
@@ -102,19 +101,17 @@ func main() {
 	piperPath := filepath.Join(homedir, "piper")
 
 	go func() {
-		for {
-			err := clipboard.Init()
-			if err == nil {
-				break
-			}
-			log.Printf("failed to initialize clipboard: %v, retrying...", err)
-			time.Sleep(time.Second)
+		err := clipboard.Init()
+		if err != nil {
+			log.Fatalf("Failed to initialize clipboard: %v", err)
 		}
 
 		err = os.Chdir(piperPath)
 		if err != nil {
 			log.Fatalf("Failed to change directory: %v", err)
 		}
+
+		fmt.Print("Got clipboard connection, waiting for changes...")
 
 		var cancelCurrent context.CancelFunc
 
@@ -196,7 +193,7 @@ func main() {
 		}
 	}()
 
-	fmt.Print("Listing on clipboard. Press Ctrl+C to exit.\n")
+	fmt.Print("Initializing listen on clipboard. Press Ctrl+C to exit.\n")
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	<-c
